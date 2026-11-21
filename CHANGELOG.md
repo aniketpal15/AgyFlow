@@ -4,6 +4,14 @@ All notable releases of AgyFlow are documented here.
 
 ---
 
+## [v1.0.2] - 2026-11-21
+
+### Fixed
+- **Accurate Live Model Quota Tracking via Official RPC**: Switched telemetry polling to Antigravity Language Server's official `RetrieveUserQuotaSummary` endpoint. This fixes the issue where Claude / GPT third-party models showed 100% despite being exhausted (now accurately reflects 0% and active reset windows).
+- **Instant Refresh Synchronization**: Refreshing quotas now immediately queries live groups and buckets directly from the running IDE language server.
+
+---
+
 ## [v1.0.1] - 2026-11-21
 
 ### Improved

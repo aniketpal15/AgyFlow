@@ -283,6 +283,41 @@ function getAgyRpcInfo(forceRefresh = false) {
   return null;
 }
 
+function callAgyRpc(port, csrf, rpcPath) {
+  return new Promise((resolve) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port,
+      path: rpcPath,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Connect-Protocol-Version': '1',
+        'x-codeium-csrf-token': csrf
+      },
+      timeout: 5000
+    }, res => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch {
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(null);
+    });
+    req.write('{}');
+    req.end();
+  });
+}
+
 function fetchAgyLocalQuotas(retries = 3) {
   return new Promise(async (resolve) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
@@ -295,77 +330,89 @@ function fetchAgyLocalQuotas(retries = 3) {
         return resolve(null);
       }
 
-      const reqAttempt = await new Promise((resAttempt) => {
-        const req = http.request({
-          hostname: '127.0.0.1',
-          port: info.port,
-          path: '/exa.language_server_pb.LanguageServerService/GetUserStatus',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Connect-Protocol-Version': '1',
-            'x-codeium-csrf-token': info.csrf
-          },
-          timeout: 5000
-        }, res => {
-          let data = '';
-          res.on('data', chunk => data += chunk);
-          res.on('end', () => {
-            try {
-              const json = JSON.parse(data);
-              const status = json.userStatus;
-              if (!status) return resAttempt(null);
+      try {
+        // 1. Official Quota RPC: RetrieveUserQuotaSummary
+        // This is Antigravity Language Server's primary quota endpoint containing exact live token fraction
+        // and reset deadlines for Gemini Models and Claude & GPT models (3p models).
+        const [quotaSummary, userStatus] = await Promise.all([
+          callAgyRpc(info.port, info.csrf, '/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary'),
+          callAgyRpc(info.port, info.csrf, '/exa.language_server_pb.LanguageServerService/GetUserStatus')
+        ]);
 
-              const configs = status.cascadeModelConfigData?.clientModelConfigs || [];
-              
-              // 1. Gemini: select active tier model with valid quotaInfo
-              const geminiConfig = configs.find(c => /gemini.*flash/i.test(c.label || c.modelId) && c.quotaInfo && c.quotaInfo.remainingFraction !== undefined)
-                || configs.find(c => /gemini.*flash/i.test(c.label || c.modelId) && c.quotaInfo)
-                || configs.find(c => /gemini/i.test(c.label || c.modelId) && c.quotaInfo);
+        const status = userStatus?.userStatus;
+        const groups = quotaSummary?.response?.groups || [];
 
-              // 2. Claude & GPT: select active model with valid quotaInfo
-              const claudeConfig = configs.find(c => /(claude|gpt)/i.test(c.label || c.modelId) && c.quotaInfo);
+        if (groups.length > 0) {
+          const geminiGroup = groups.find(g => /gemini/i.test(g.displayName || ''));
+          const claudeGroup = groups.find(g => /(claude|gpt|3p)/i.test(g.displayName || ''));
 
-              const parseQuota = (cfg, defaultModel, key) => {
-                const remaining = extractRemainingPercent(cfg?.quotaInfo);
-                const resetTime = cfg?.quotaInfo?.resetTime || null;
-                return {
-                  key,
-                  model: defaultModel,
-                  remainingPercent: remaining,
-                  resetTime,
-                  resetCountdown: resetTime ? formatReset(resetTime) : 'Ready'
-                };
-              };
-
-              const quotas = [
-                parseQuota(geminiConfig, 'Gemini', 'gemini'),
-                parseQuota(claudeConfig, 'Claude & GPT', 'claude-gpt')
-              ];
-
-              const plan = status.userTier?.name || status.plan || 'Antigravity Starter Quota';
-              resAttempt({ quotas, plan, email: status.email });
-            } catch {
-              resAttempt(null);
+          const getBucketQuota = (grp, defaultModel, key) => {
+            const buckets = grp?.buckets || [];
+            // Prefer weekly limit bucket (e.g. gemini-weekly, 3p-weekly)
+            const bucket = buckets.find(b => b.window === 'weekly') || buckets[0];
+            let remainingPercent = 100;
+            if (bucket) {
+              if (typeof bucket.remainingFraction === 'number') {
+                remainingPercent = Math.max(0, Math.min(100, Math.round(bucket.remainingFraction * 100)));
+              } else if (bucket.resetTime) {
+                remainingPercent = 0;
+              }
             }
-          });
-        });
+            const resetTime = bucket?.resetTime || null;
+            return {
+              key,
+              model: defaultModel,
+              remainingPercent,
+              resetTime,
+              resetCountdown: resetTime ? formatReset(resetTime) : 'Ready'
+            };
+          };
 
-        req.on('error', () => {
-          _cachedAgyRpcInfo = null;
-          resAttempt(null);
-        });
-        req.on('timeout', () => {
-          req.destroy();
-          _cachedAgyRpcInfo = null;
-          resAttempt(null);
-        });
-        req.write('{}');
-        req.end();
-      });
+          const quotas = [
+            getBucketQuota(geminiGroup, 'Gemini', 'gemini'),
+            getBucketQuota(claudeGroup, 'Claude & GPT', 'claude-gpt')
+          ];
 
-      if (reqAttempt) return resolve(reqAttempt);
+          const plan = status?.userTier?.name || status?.plan || 'Antigravity Starter Quota';
+          const email = status?.email || null;
+
+          return resolve({ quotas, plan, email });
+        }
+
+        // 2. Fallback: Parse GetUserStatus cascadeModelConfigData if RetrieveUserQuotaSummary returned no groups
+        if (status) {
+          const configs = status.cascadeModelConfigData?.clientModelConfigs || [];
+          
+          const geminiConfig = configs.find(c => /gemini.*flash/i.test(c.label || c.modelId) && c.quotaInfo && c.quotaInfo.remainingFraction !== undefined)
+            || configs.find(c => /gemini.*flash/i.test(c.label || c.modelId) && c.quotaInfo)
+            || configs.find(c => /gemini/i.test(c.label || c.modelId) && c.quotaInfo);
+
+          const claudeConfig = configs.find(c => /(claude|gpt)/i.test(c.label || c.modelId) && c.quotaInfo);
+
+          const parseQuota = (cfg, defaultModel, key) => {
+            const remaining = extractRemainingPercent(cfg?.quotaInfo);
+            const resetTime = cfg?.quotaInfo?.resetTime || null;
+            return {
+              key,
+              model: defaultModel,
+              remainingPercent: remaining,
+              resetTime,
+              resetCountdown: resetTime ? formatReset(resetTime) : 'Ready'
+            };
+          };
+
+          const quotas = [
+            parseQuota(geminiConfig, 'Gemini', 'gemini'),
+            parseQuota(claudeConfig, 'Claude & GPT', 'claude-gpt')
+          ];
+
+          const plan = status.userTier?.name || status.plan || 'Antigravity Starter Quota';
+          return resolve({ quotas, plan, email: status.email });
+        }
+      } catch (err) {
+        _cachedAgyRpcInfo = null;
+      }
+
       if (attempt < retries) {
         await new Promise(r => setTimeout(r, 600));
       }
