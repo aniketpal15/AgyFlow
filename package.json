@@ -69,6 +69,7 @@
       "uninstallerIcon": "public/icon.ico",
       "installerHeaderIcon": "public/icon.ico",
       "artifactName": "AgyFlow Setup.${ext}"
-    }
+    },
+    "publish": "never"
   }
 }
