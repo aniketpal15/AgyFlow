@@ -3,6 +3,20 @@ const path = require('path');
 const telemetry = require('./telemetry.cjs');
 const oauth = require('./oauth.cjs');
 
+// ── Memory Footprint Reduction ──────────────────────────────────────────────
+// Disable unused Chromium subsystems before the app is ready.
+// None of these affect any app functionality — AgyFlow has no video, audio,
+// GPU compositing, spell-check, PDF, or print requirements.
+app.commandLine.appendSwitch('disable-features',
+  'VizDisplayCompositor,TranslateUI,MediaRouter,OptimizationGuideModelDownloading,CalculateNativeWinOcclusion'
+);
+app.commandLine.appendSwitch('disable-gpu');           // no GPU compositing needed
+app.commandLine.appendSwitch('disable-gpu-sandbox');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('disable-dev-shm-usage');  // avoids /dev/shm OOM on Linux, harmless on Windows
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=128'); // cap V8 heap to 128 MB
+// ────────────────────────────────────────────────────────────────────────────
+
 // Prevent unexpected process exits on async/IPC errors or terminal console signals
 process.on('uncaughtException', (err) => console.error('[main] uncaughtException:', err));
 process.on('unhandledRejection', (reason) => console.error('[main] unhandledRejection:', reason));
@@ -96,7 +110,11 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      backgroundThrottling: true,       // throttle timers & animations when minimized/hidden
+      spellcheck: false,                 // no text input fields needing spellcheck
+      enableWebSQL: false,               // not using WebSQL
+      disableHtmlFullscreenWindowResize: true
     },
     autoHideMenuBar: true,
     show: false
@@ -112,6 +130,9 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     startCredentialWatcher(); // start background watcher after window is shown
+
+    // Run one GC pass after startup to release boot-time allocations
+    if (global.gc) global.gc();
   });
 
   mainWindow.on('closed', () => {
@@ -221,6 +242,11 @@ ipcMain.handle('toggle-theme', async (_, theme) => {
 
 // App Lifecycle
 app.whenReady().then(createWindow);
+
+app.on('browser-window-blur', () => {
+  // Trigger GC when user switches away from the app to free idle memory
+  if (global.gc) global.gc();
+});
 
 app.on('window-all-closed', () => {
   if (_watcherInterval) clearInterval(_watcherInterval); // stop watcher on quit
