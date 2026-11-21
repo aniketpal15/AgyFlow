@@ -90,6 +90,7 @@ export default function App() {
         onInspectRpc={(acc) => setRpcAccount(acc)}
         onSwitchAccount={switchActiveAccount}
         onImportAccount={importLocalAccount}
+        onOpenAddModal={handleOpenAddModal}
       />
 
       {/* 5. Add Account Modal */}

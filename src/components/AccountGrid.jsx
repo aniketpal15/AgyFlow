@@ -1,14 +1,15 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import AccountCard from './AccountCard';
-import { Sparkles, ShieldCheck, DownloadCloud } from 'lucide-react';
+import { Sparkles, ShieldCheck, DownloadCloud, Plus, Zap, CheckCircle2 } from 'lucide-react';
 
 export default function AccountGrid({ 
   accounts, 
   onDeleteAccount, 
   onInspectRpc,
   onSwitchAccount,
-  onImportAccount
+  onImportAccount,
+  onOpenAddModal
 }) {
   // 1. Identify the currently active Antigravity IDE account
   const activeAccount = accounts.find(a => a.isActiveInIde || a.status === 'Primary Active') || accounts[0];
@@ -30,21 +31,78 @@ export default function AccountGrid({
       {/* Main Momentum Scroll Area */}
       <div className="flex-1 overflow-y-auto pr-1.5 -mr-1.5 pt-4">
         {accounts.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 text-slate-400 p-6 text-center my-8">
-            <Sparkles className="w-8 h-8 text-cyan mb-3 opacity-60 animate-pulse" />
-            <p className="text-sm font-semibold text-slate-200">No Google Accounts In Fleet</p>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed">
-              Antigravity IDE saves credentials directly in Windows Credential Manager. Click below to load your active account immediately.
+          <div className="max-w-2xl mx-auto my-auto py-10 px-6 flex flex-col items-center text-center">
+            {/* Glowing Icon Badge */}
+            <div className="w-16 h-16 rounded-2xl bg-cyan/10 border border-cyan/30 flex items-center justify-center mb-5 shadow-cyan-glow relative">
+              <Sparkles className="w-8 h-8 text-cyan animate-pulse" />
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan"></span>
+              </span>
+            </div>
+
+            {/* Title & Description */}
+            <h2 className="text-2xl font-bold tracking-tight text-slate-100 mb-2">
+              Welcome to AgyFlow
+            </h2>
+            <p className="text-sm text-slate-400 max-w-md leading-relaxed mb-7">
+              Manage your Google Antigravity IDE accounts, monitor live Gemini & Claude token quotas, and switch active profiles with a single click.
             </p>
-            {onImportAccount && (
-              <button
-                onClick={onImportAccount}
-                className="mt-5 px-5 py-2.5 rounded-xl bg-cyan hover:bg-cyan/90 text-black font-semibold text-xs shadow-cyan-glow flex items-center gap-2 transition-all active:scale-95"
-              >
-                <DownloadCloud className="w-4 h-4" />
-                <span>Import Active IDE Account</span>
-              </button>
-            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-sm mb-9">
+              {onImportAccount && (
+                <button
+                  onClick={onImportAccount}
+                  className="w-full sm:w-auto flex-1 px-5 py-3 rounded-xl bg-cyan hover:bg-cyan/90 text-black font-semibold text-xs shadow-cyan-glow flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                >
+                  <DownloadCloud className="w-4 h-4" />
+                  <span>Import Active IDE Account</span>
+                </button>
+              )}
+
+              {onOpenAddModal && (
+                <button
+                  onClick={onOpenAddModal}
+                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-white border border-white/[0.12] font-semibold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Account</span>
+                </button>
+              )}
+            </div>
+
+            {/* Feature Checklist */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full text-left">
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-start gap-2.5">
+                <Zap className="w-4 h-4 text-cyan shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-slate-200">Zero-Scraper RPC</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Queries running Antigravity socket for exact tokens.</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-slate-200">7-Day Auto Restorer</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Auto-restores quota balances once timers expire.</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-slate-200">100% Local DPAPI</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Tokens stay encrypted in Windows Credential Manager.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Helpful tip */}
+            <p className="text-[11px] text-slate-500 mt-6 font-mono">
+              💡 Keep Google Antigravity IDE open for instant 1-click account detection.
+            </p>
           </div>
         ) : (
           <div className="space-y-7 pb-8">

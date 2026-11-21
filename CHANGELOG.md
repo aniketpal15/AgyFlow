@@ -4,6 +4,15 @@ All notable releases of AgyFlow are documented here.
 
 ---
 
+## [v1.0.1] - 2026-11-21
+
+### Improved
+- **Clean Onboarding Empty State**: For fresh installations without connected accounts, provides a modern welcome screen with quick-action buttons to import the running Antigravity IDE account or manually add accounts.
+- **Privacy & Keystore Isolation**: Confirmed fresh installs launch completely blank without test artifacts or pre-populated fleet accounts.
+- Updated documentation and download buttons for direct installer access.
+
+---
+
 ## [v1.0.0] - 2026-11-21
 
 ### Initial Release
