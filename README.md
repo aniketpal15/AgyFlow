@@ -30,48 +30,51 @@ Instead of manually signing out, opening a browser, re-authenticating, and disru
 
 ## 📥 Download & Install
 
-> **Easiest way** — no Node.js, no terminal, no setup needed. Just download and run.
+> **No Node.js, no terminal, no setup needed — just click and install.**
 
 <p align="center">
   <a href="https://github.com/aniketpal15/AgyFlow/releases/latest/download/AgyFlow%20Setup.exe">
-    <img src="https://img.shields.io/badge/⬇️%20Download%20AgyFlow%20Setup.exe-v1.0.0-00C2FF?style=for-the-badge&logo=windows&logoColor=white" alt="Download AgyFlow Setup.exe" />
+    <img src="https://img.shields.io/badge/-⬇%20%20Download%20AgyFlow%20Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white&labelColor=0078D4" height="50" alt="Download AgyFlow Setup.exe" />
   </a>
 </p>
 
 <p align="center">
   <a href="https://github.com/aniketpal15/AgyFlow/releases">
-    <img src="https://img.shields.io/github/v/release/aniketpal15/AgyFlow?style=for-the-badge&label=Latest%20Release&color=00C2FF" alt="Latest Release" />
+    <img src="https://img.shields.io/github/v/release/aniketpal15/AgyFlow?style=flat-square&label=Latest%20Version&color=00C2FF" alt="Latest Version" />
   </a>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=flat-square&logo=windows" alt="Windows 10/11" />
+  &nbsp;
+  <img src="https://img.shields.io/badge/Size-~100MB-green?style=flat-square" alt="Size" />
 </p>
 
-### Steps to Install
+---
 
-1. Go to the **[Releases Page](https://github.com/aniketpal15/AgyFlow/releases)**
-2. Under the latest release, click **`AgyFlow Setup.exe`** to download it
-3. Double-click the downloaded `AgyFlow Setup.exe`
-4. The installer runs silently — a **desktop shortcut** is created automatically
-5. Click the **AgyFlow** shortcut on your desktop to launch the app ✅
+### 🖱️ How to Install (3 steps)
 
-### Direct Download Link
+| Step | Action |
+|:---:|---|
+| **1** | Click the blue **Download** button above |
+| **2** | Double-click the downloaded **`AgyFlow Setup.exe`** |
+| **3** | A **desktop shortcut** appears — click it to launch AgyFlow ✅ |
 
-Always downloads the **latest version** automatically:
+### 🔗 Direct Download Link
 
 ```
 https://github.com/aniketpal15/AgyFlow/releases/latest/download/AgyFlow%20Setup.exe
 ```
+> This link **always gives you the latest version** — bookmark it or share it directly.
 
-### Requirements
+### ⚙️ Requirements
 - Windows 10 or Windows 11 (64-bit)
-- Google Antigravity IDE installed and running
+- [Google Antigravity IDE](https://antigravity.google/) installed and running
 
-### Updating to a New Version
+### 🔄 Updating to a New Version
 
-When a new version is released (e.g. `v1.1.0`, `v1.2.0`):
-1. Visit the **[Releases Page](https://github.com/aniketpal15/AgyFlow/releases)**
-2. Download the new `AgyFlow Setup.exe` from the latest release
-3. Run it — the installer **silently upgrades** your existing installation (no uninstall needed)
-
-> 💡 **Tip**: The direct download link above always points to the latest release, so you can bookmark it and always get the newest version.
+When a new version is released (`v1.1.0`, `v1.2.0`, etc.):
+1. Click the download button above (or go to the **[Releases Page](https://github.com/aniketpal15/AgyFlow/releases)**)
+2. Download and run the new `AgyFlow Setup.exe`
+3. It **silently upgrades** your existing installation — no uninstall needed ✅
 
 ---
 
