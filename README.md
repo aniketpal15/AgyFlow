@@ -13,10 +13,6 @@
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="MIT License" />
 </p>
 
-<p align="center">
-  <img src="screen1.png" alt="AgyFlow Dashboard Preview" width="800" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
-</p>
-
 ---
 
 ## 📖 Overview
