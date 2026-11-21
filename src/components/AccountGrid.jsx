@@ -1,7 +1,7 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import AccountCard from './AccountCard';
-import { Sparkles, ShieldCheck, DownloadCloud, ArrowDownWideNarrow, Zap } from 'lucide-react';
+import { Sparkles, ShieldCheck, DownloadCloud } from 'lucide-react';
 
 export default function AccountGrid({ 
   accounts, 
@@ -55,14 +55,9 @@ export default function AccountGrid({
               <section className="w-full">
                 <div className="flex items-center justify-between pb-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-cyan shadow-sm shadow-cyan animate-pulse" />
-                    <h2 className="text-xs font-mono font-bold tracking-wider uppercase text-cyan">
+                    <h2 className="text-sm font-mono font-bold tracking-wider uppercase text-cyan">
                       Current Active IDE Account
                     </h2>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan/15 text-cyan border border-cyan/30 flex items-center gap-1">
-                      <Zap className="w-3 h-3 text-cyan" />
-                      LIVE SESSION
-                    </span>
                   </div>
 
                   <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400">
@@ -91,15 +86,11 @@ export default function AccountGrid({
             <section className="w-full pt-1">
               <div className="flex items-center justify-between pb-3.5">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h2 className="text-sm font-bold tracking-tight text-white">
+                  <h2 className="text-base font-bold tracking-tight text-white">
                     Linked Google Accounts
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white/[0.04] text-slate-300 border border-white/10">
-                    Fleet ({standbyAccounts.length})
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-amber-400/10 text-amber-300 border border-amber-400/20 flex items-center gap-1">
-                    <ArrowDownWideNarrow className="w-3 h-3" />
-                    Sorted: Max → Min (Total Quota %)
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/[0.06] text-slate-300 border border-white/[0.10]">
+                    {accounts.length}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 font-medium hidden md:block">

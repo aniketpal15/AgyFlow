@@ -1,8 +1,49 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, ShieldCheck, Zap } from 'lucide-react';
+import loaderDark from '../assets/loader-dark.webp';
+import loaderLight from '../assets/loader-light.webp';
 
-export default function SyncOverlay({ isSyncing }) {
+// Fluid SVG metaball fallback (guaranteed zero broken images)
+function FluidOrbFallback({ isLight }) {
+  const c1 = isLight ? '#7C3AED' : '#00f0ff';
+  const c2 = isLight ? '#A855F7' : '#6366f1';
+
+  return (
+    <div className="relative w-64 h-40 flex items-center justify-center">
+      <motion.div
+        animate={{
+          x: [-45, 45, -45],
+          scale: [1, 1.25, 0.85, 1],
+        }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+        className="w-16 h-16 rounded-full absolute"
+        style={{
+          background: `radial-gradient(circle at 35% 35%, #ffffff 0%, ${c1} 65%, transparent 100%)`,
+          boxShadow: `0 0 35px ${c1}`,
+        }}
+      />
+      <motion.div
+        animate={{
+          x: [45, -45, 45],
+          scale: [1, 0.85, 1.25, 1],
+        }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+        className="w-14 h-14 rounded-full absolute"
+        style={{
+          background: `radial-gradient(circle at 35% 35%, #ffffff 0%, ${c2} 65%, transparent 100%)`,
+          boxShadow: `0 0 28px ${c2}`,
+        }}
+      />
+    </div>
+  );
+}
+
+export default function SyncOverlay({ isSyncing, theme = 'dark' }) {
+  const [imgError, setImgError] = useState(false);
+  const isLight = theme === 'snow' || theme === 'latte';
+
+  const loaderSrc = isLight ? loaderLight : loaderDark;
+
   return (
     <AnimatePresence>
       {isSyncing && (
@@ -10,54 +51,61 @@ export default function SyncOverlay({ isSyncing }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 bg-[#090A0F]/75 backdrop-blur-md flex flex-col items-center justify-center select-none"
+          transition={{ duration: 0.25 }}
+          className="fixed inset-0 z-50 modal-backdrop flex flex-col items-center justify-center select-none p-4"
         >
-          {/* Card Modal with Neon Glow */}
+          {/* Centered Ambient Glow */}
+          <div
+            className="absolute rounded-full blur-[110px] pointer-events-none transition-all duration-700"
+            style={{
+              width: 360,
+              height: 360,
+              background: isLight
+                ? 'radial-gradient(circle, rgba(124,58,237,0.22), transparent 70%)'
+                : 'radial-gradient(circle, rgba(0,240,255,0.20), transparent 70%)',
+            }}
+          />
+
+          {/* Loader Container — No Card Box, Clean Transparent Presentation */}
           <motion.div
-            initial={{ scale: 0.92, opacity: 0, y: 10 }}
+            initial={{ scale: 0.9, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.92, opacity: 0, y: 10 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-sm rounded-3xl bg-[#10141F]/90 border border-white/10 shadow-2xl p-6 relative flex flex-col items-center text-center specular-top"
+            exit={{ scale: 0.9, opacity: 0, y: 8 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="relative flex flex-col items-center justify-center text-center z-10"
           >
-            {/* Spinning Dual Glowing Rings */}
-            <div className="relative w-20 h-20 flex items-center justify-center mb-4">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-                className="w-18 h-18 rounded-full border-2 border-transparent border-t-cyan border-r-cyan/60 shadow-cyan-glow"
-              />
-              <motion.div
-                animate={{ rotate: -360 }}
-                transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-                className="absolute w-12 h-12 rounded-full border border-amber/40 border-b-amber shadow-amber/30"
-              />
-              <div className="absolute w-7 h-7 rounded-full bg-[#121622] border border-cyan/40 flex items-center justify-center">
-                <Zap className="w-3.5 h-3.5 text-cyan animate-pulse" />
-              </div>
+            {/* Big Loader with background completely removed */}
+            <div className="relative flex items-center justify-center">
+              {!imgError ? (
+                <img
+                  src={loaderSrc}
+                  alt="Loading..."
+                  onError={() => setImgError(true)}
+                  className={`w-64 sm:w-72 md:w-80 h-auto object-contain select-none pointer-events-none drop-shadow-2xl ${
+                    isLight ? '' : 'mix-blend-screen'
+                  }`}
+                />
+              ) : (
+                <FluidOrbFallback isLight={isLight} />
+              )}
             </div>
 
-            {/* Status Badges */}
-            <h3 className="text-sm font-bold text-white tracking-tight mb-1 flex items-center gap-1.5 justify-center">
-              <span>Refreshing Token Pools</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-ping" />
-            </h3>
-            <p className="text-xs text-slate-400 mb-4 max-w-[260px]">
-              Querying live Google Cloud Code quota limits and syncing Windows Keystore...
-            </p>
-
-            <div className="w-full py-2 px-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between text-[11px] font-mono text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                Windows Keystore
-              </span>
-              <span className="text-cyan animate-pulse">Syncing...</span>
-            </div>
+            {/* Only the loading writing — dark text in light theme, light text in dark theme */}
+            <motion.p
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className={`mt-4 font-sans text-sm sm:text-base font-semibold tracking-wider uppercase flex items-center gap-2 transition-colors ${
+                isLight
+                  ? 'text-slate-900'
+                  : 'text-slate-100 drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]'
+              }`}
+            >
+              <span className="animate-pulse">Loading...</span>
+            </motion.p>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
   );
 }
-

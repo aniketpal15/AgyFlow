@@ -25,12 +25,7 @@ export function useAccounts(showToast) {
 
   const fetchAccounts = useCallback(async () => {
     setIsSyncing(true);
-
-    // Safety timeout: guaranteed to never stay stuck on loading screen
-    const safetyTimer = setTimeout(() => {
-      setIsSyncing(false);
-      setIsLoading(false);
-    }, 4000);
+    const startTime = Date.now();
 
     try {
       if (window.electronAPI?.getAccounts) {
@@ -42,7 +37,10 @@ export function useAccounts(showToast) {
     } catch (error) {
       console.warn('Unable to load local accounts:', error);
     } finally {
-      clearTimeout(safetyTimer);
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1000) {
+        await new Promise(resolve => setTimeout(resolve, 1000 - elapsed));
+      }
       setIsLoading(false);
       setIsSyncing(false);
     }
@@ -130,26 +128,36 @@ export function useAccounts(showToast) {
 
   const importLocalAccount = async () => {
     setIsSyncing(true);
+    const startTime = Date.now();
     try {
       if (window.electronAPI?.importLocalAccount) {
         const updated = await window.electronAPI.importLocalAccount();
-        setAccounts(updated);
+        if (Array.isArray(updated)) {
+          setAccounts(updated);
+        }
         showToast?.('Imported active account from Antigravity IDE.', 'success');
       }
     } catch (error) {
       showToast?.(error.message || 'Could not import local account.', 'error');
     } finally {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1000) {
+        await new Promise(resolve => setTimeout(resolve, 1000 - elapsed));
+      }
       setIsSyncing(false);
     }
   };
 
   const switchActiveAccount = async (id) => {
     setIsSyncing(true);
+    const startTime = Date.now();
     try {
       if (window.electronAPI?.switchActiveAccount) {
         const updated = await window.electronAPI.switchActiveAccount(id);
-        setAccounts(updated);
-        const target = updated.find(a => a.id === id);
+        if (Array.isArray(updated)) {
+          setAccounts(updated);
+        }
+        const target = updated?.find?.(a => a.id === id);
 
         toastRef.current?.(
           `Switched to ${target?.email || 'account'}! Reload Window (Ctrl+R) in Antigravity IDE to activate.`,
@@ -162,6 +170,10 @@ export function useAccounts(showToast) {
       console.error('[switchActiveAccount] error:', error);
       toastRef.current?.(error?.message || 'Could not switch active account.', 'error');
     } finally {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1000) {
+        await new Promise(resolve => setTimeout(resolve, 1000 - elapsed));
+      }
       setIsSyncing(false);
     }
   };
@@ -182,13 +194,20 @@ export function useAccounts(showToast) {
 
   const triggerSync = async () => {
     setIsSyncing(true);
+    const startTime = Date.now();
     try {
       const updated = await window.electronAPI.syncTokens();
-      setAccounts(updated);
+      if (Array.isArray(updated) && updated.length > 0) {
+        setAccounts(updated);
+      }
       showToast?.('Live Antigravity quotas refreshed.', 'success');
     } catch (error) {
       showToast?.(error.message || 'Quota refresh failed.', 'error');
     } finally {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1000) {
+        await new Promise(resolve => setTimeout(resolve, 1000 - elapsed));
+      }
       setIsSyncing(false);
     }
   };

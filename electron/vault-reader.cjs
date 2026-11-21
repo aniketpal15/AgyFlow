@@ -219,4 +219,52 @@ async function readIdeVaultToken(email, safeStorage) {
   }
 }
 
-module.exports = { readIdeVaultToken, AGY_GLOBAL_STATE_DB };
+/**
+ * Reads all real Google account profile image URLs from state.vscdb
+ * Returns { avatarMap: Record<email, url>, activeProfileUrl: string | null }
+ */
+async function getKnownGoogleAvatars() {
+  if (!fs.existsSync(AGY_GLOBAL_STATE_DB)) return { avatarMap: {}, activeProfileUrl: null };
+  try {
+    let initSqlJs;
+    try { initSqlJs = require('sql.js'); } catch { return { avatarMap: {}, activeProfileUrl: null }; }
+    const wasmPath = path.join(require.resolve('sql.js'), '..', '..', 'dist', 'sql-wasm.wasm');
+    const SQL = await initSqlJs({ locateFile: () => wasmPath });
+    const db = new SQL.Database(fs.readFileSync(AGY_GLOBAL_STATE_DB));
+
+    const stmt = db.prepare('SELECT key, value FROM ItemTable');
+    const avatarMap = {};
+    let activeProfileUrl = null;
+
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      const key = row.key;
+      const val = row.value;
+      if (typeof val === 'string') {
+        if (key === 'antigravity.profileUrl' && val.startsWith('http')) {
+          activeProfileUrl = val;
+        }
+        try {
+          const json = JSON.parse(val);
+          for (const k of Object.keys(json)) {
+            if (Array.isArray(json[k])) {
+              json[k].forEach(item => {
+                if (item && item.email && item.avatarUrl && !item.avatarUrl.includes('dicebear')) {
+                  avatarMap[item.email.toLowerCase()] = item.avatarUrl;
+                }
+              });
+            }
+          }
+        } catch {}
+      }
+    }
+    stmt.free();
+    try { db.close(); } catch {}
+    return { avatarMap, activeProfileUrl };
+  } catch (e) {
+    console.warn('[vault] getKnownGoogleAvatars warning:', e.message);
+    return { avatarMap: {}, activeProfileUrl: null };
+  }
+}
+
+module.exports = { readIdeVaultToken, getKnownGoogleAvatars, AGY_GLOBAL_STATE_DB };

@@ -7,6 +7,9 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'Roboto', 'Open Sans', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+      },
       colors: {
         obsidian: {
           950: '#07080c',

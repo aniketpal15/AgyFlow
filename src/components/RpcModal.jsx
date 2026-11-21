@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Terminal, Check, Copy } from 'lucide-react';
 
 export default function RpcModal({ isOpen, onClose, account }) {
   const [copied, setCopied] = React.useState(false);
+
+  // Escape key listener for accessibility
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!account) return null;
 
@@ -24,7 +34,7 @@ export default function RpcModal({ isOpen, onClose, account }) {
       };
 
   const payload = {
-    daemon_version: "2.4.0-antigravity",
+    daemon_version: "1.0.0-antigravity",
     pool_id: account.id || "antigravity-local-node",
     seat_badge: account.seatBadge || "G1",
     authenticated_identity: account.email,
@@ -51,19 +61,25 @@ export default function RpcModal({ isOpen, onClose, account }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xl flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) onClose();
+          }}
+          className="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4 select-none"
+          role="dialog"
+          aria-modal="true"
         >
           <motion.div
             initial={{ scale: 0.94, opacity: 0, y: 16 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.94, opacity: 0, y: 16 }}
-            className="w-full max-w-xl rounded-3xl bg-[#0E1118] border border-white/[0.1] shadow-2xl p-6 relative specular-top flex flex-col max-h-[85vh]"
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-xl rounded-3xl modal-surface p-6 relative specular-top flex flex-col max-h-[85vh] shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.06] mb-4">
+            <div className="flex items-center justify-between pb-4 border-b border-black/5 dark:border-white/[0.06] mb-4">
               <div className="flex items-center gap-2.5">
-                <Terminal className="w-4 h-4 text-cyan" />
-                <h3 className="text-sm font-bold text-white font-mono">
+                <Terminal className="w-4 h-4 text-purple-600 dark:text-cyan" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white font-mono">
                   RPC Daemon Telemetry • {account.seatBadge || 'Seat'}
                 </h3>
               </div>
@@ -71,23 +87,30 @@ export default function RpcModal({ isOpen, onClose, account }) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCopy}
-                  className="px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-xs font-mono text-slate-300 flex items-center gap-1.5 transition-colors"
+                  className="px-2.5 py-1 rounded-lg bg-black/5 dark:bg-white/[0.05] hover:bg-black/10 dark:hover:bg-white/[0.1] text-xs font-mono text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition-colors active:scale-95"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copied ? 'Copied' : 'Copy'}</span>
                 </button>
                 <button
                   onClick={onClose}
-                  className="w-7 h-7 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                  aria-label="Close modal"
+                  className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/[0.04] hover:bg-black/10 dark:hover:bg-white/[0.08] text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors active:scale-95"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-            {/* Code Body */}
-            <div className="flex-1 overflow-y-auto rounded-xl bg-black/60 p-4 border border-white/[0.06] font-mono text-[12px] text-cyan/90 leading-relaxed">
-              <pre>{jsonStr}</pre>
+            {/* Terminal Body */}
+            <div className="flex-1 overflow-auto rounded-2xl bg-[#080A12] border border-black/10 dark:border-white/[0.06] p-4 text-[11px] font-mono text-cyan-300 leading-relaxed shadow-inner">
+              <pre className="whitespace-pre-wrap">{jsonStr}</pre>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 font-mono">
+              <span>Protocol: JSON-RPC 2.0</span>
+              <span className="text-emerald-600 dark:text-emerald-400">Stream Connected (0.28ms)</span>
             </div>
           </motion.div>
         </motion.div>

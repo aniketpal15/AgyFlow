@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync, execSync } = require('child_process');
 const telemetry = require('./telemetry.cjs');
-const { readIdeVaultToken } = require('./vault-reader.cjs');
+const { readIdeVaultToken, getKnownGoogleAvatars } = require('./vault-reader.cjs');
 const { performFullIdeAccountSwitch } = require('./ide-injector.cjs');
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -186,7 +186,7 @@ function extractEmailAndDetails(cred) {
     return {
       email,
       name: name || email.split('@')[0],
-      avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`
+      avatarUrl: avatarUrl || null
     };
   }
   return null;
@@ -375,17 +375,22 @@ function fetchAgyLocalQuotas(retries = 3) {
 }
 
 async function fetchAccountQuotas(accessToken, targetEmail = null) {
-  // 1. First priority: Try local Antigravity Language Server RPC
+  // 1. First priority: Try local Antigravity Language Server RPC ONLY IF it matches targetEmail (or no targetEmail specified)
   try {
     const localRpcData = await fetchAgyLocalQuotas();
     if (localRpcData) {
-      console.log('[fetchAccountQuotas] Live quotas acquired via local Language Server RPC for:', localRpcData.email);
-      return {
-        quotas: localRpcData.quotas,
-        plan: localRpcData.plan,
-        email: localRpcData.email,
-        projectId: 'aicode-consumers'
-      };
+      const emailMatches = !targetEmail || (localRpcData.email && targetEmail && localRpcData.email.toLowerCase() === targetEmail.toLowerCase());
+      if (emailMatches) {
+        console.log('[fetchAccountQuotas] Live quotas acquired via local Language Server RPC for:', localRpcData.email);
+        return {
+          quotas: localRpcData.quotas,
+          plan: localRpcData.plan,
+          email: localRpcData.email,
+          projectId: 'aicode-consumers'
+        };
+      } else {
+        console.log(`[fetchAccountQuotas] Local Language Server is serving ${localRpcData.email}, which does not match target ${targetEmail}. Skipping local RPC.`);
+      }
     }
   } catch (rpcErr) {
     console.warn('[fetchAccountQuotas] Local RPC failed, falling back to Web API:', rpcErr.message);
@@ -523,7 +528,7 @@ async function syncActiveIdeAccount({ waitForChange = false, requireCredential =
         seatBadge: `G${seatIndex}`,
         email: email,
         name: details?.name || email.split('@')[0],
-        avatarUrl: details?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
+        avatarUrl: details?.avatarUrl || null,
         status: 'Primary Active',
         plan: liveData?.plan || 'Antigravity Starter',
         isMaster: accounts.length === 0,
@@ -562,6 +567,25 @@ async function syncActiveIdeAccount({ waitForChange = false, requireCredential =
       acc.isActiveInIde = isCurrentActive;
       acc.status = isCurrentActive ? 'Primary Active' : 'Standby Node';
       acc.error = null; // Standby accounts never show error banner
+    }
+
+    // 3b. Apply time-based quota restoration and live countdown updates for standby accounts
+    // Standby accounts preserve their own individual data and automatically reset to 100% Ready when their resetTime expires
+    telemetry.applyStandbyQuotaRestoration(accounts);
+
+    // 3c. Synchronize real Google account avatar images from IDE storage for all fleet accounts
+    try {
+      const { avatarMap, activeProfileUrl } = await getKnownGoogleAvatars();
+      for (const acc of accounts) {
+        const emailLower = acc.email?.toLowerCase();
+        if (avatarMap && avatarMap[emailLower]) {
+          acc.avatarUrl = avatarMap[emailLower];
+        } else if (acc.isActiveInIde && activeProfileUrl) {
+          acc.avatarUrl = activeProfileUrl;
+        }
+      }
+    } catch (avErr) {
+      console.warn('[syncActiveIdeAccount] Avatar sync error:', avErr.message);
     }
 
     // 4. Save credentials securely for quick switching later (both paths)
@@ -676,7 +700,7 @@ async function switchActiveAccount(accountId) {
     for (let attempt = 1; attempt <= 12; attempt++) {
       await new Promise(r => setTimeout(r, 600));
       const localData = await fetchAgyLocalQuotas(1);
-      if (localData && (!localData.email || localData.email.toLowerCase() === target.email.toLowerCase())) {
+      if (localData && localData.email && localData.email.toLowerCase() === target.email.toLowerCase()) {
         target.quotas = localData.quotas;
         target.plan = localData.plan;
         target.lastRefreshedAt = new Date().toISOString();
@@ -695,6 +719,7 @@ async function switchActiveAccount(accountId) {
     acc.status = isTarget ? 'Primary Active' : 'Standby Node';
     acc.error = null;
   }
+  telemetry.applyStandbyQuotaRestoration(accounts);
   telemetry.saveFleet(accounts);
 
   return accounts;

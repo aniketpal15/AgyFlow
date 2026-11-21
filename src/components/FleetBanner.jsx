@@ -63,7 +63,6 @@ export default function FleetBanner({ accounts }) {
           <span className="text-[11px] font-mono tracking-wider font-semibold uppercase text-cyan">
             Gemini 1.5 Pro
           </span>
-          <span className="w-2 h-2 rounded-full bg-cyan shadow-cyan-glow animate-pulse" />
         </div>
         <div className="flex items-baseline gap-2 mb-2">
           <span className="text-3xl font-extrabold text-white tracking-tight">{geminiAvgPct}%</span>
@@ -89,7 +88,6 @@ export default function FleetBanner({ accounts }) {
           <span className="text-[11px] font-mono tracking-wider font-semibold uppercase text-amber">
             Claude 3.5 Sonnet
           </span>
-          <span className="w-2 h-2 rounded-full bg-amber shadow-amber-glow animate-pulse" />
         </div>
         <div className="flex items-baseline gap-2 mb-2">
           <span className="text-3xl font-extrabold text-white tracking-tight">{claudeAvgPct}%</span>

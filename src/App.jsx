@@ -67,10 +67,10 @@ export default function App() {
       theme === 'oled' ? 'bg-black' : theme === 'snow' ? 'bg-[#F4F5FB]' : theme === 'latte' ? 'bg-[#FDF9F3]' : 'bg-[#090A0F]'
     } ${theme === 'snow' || theme === 'latte' ? 'light-theme' : ''} theme-${theme}`}>
       {/* 1. Geometric Pulse Splash Loader on App Launch */}
-      <SplashLoader isVisible={showSplash} />
+      <SplashLoader isVisible={showSplash} theme={theme} />
 
       {/* 2. Frosted Glass Sync Overlay during Token Pool Refresh */}
-      <SyncOverlay isSyncing={isSyncing} />
+      <SyncOverlay isSyncing={isSyncing} theme={theme} />
 
       {/* 3. Top Navigation Bar (Header) */}
       <Header
