@@ -1,0 +1,54 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'   # triggers on any tag like v1.0.0, v1.1.0, v2.0.0
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend & package installer
+        run: npm run dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload installer to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: AgyFlow ${{ github.ref_name }}
+          body: |
+            ## AgyFlow ${{ github.ref_name }}
+
+            ### Download & Install
+            1. Download **AgyFlow Setup.exe** below
+            2. Double-click to install — desktop shortcut is created automatically
+            3. If you have an older version, the installer upgrades it silently
+
+            ### Requirements
+            - Windows 10 / 11 (64-bit)
+            - Google Antigravity IDE installed and running
+
+            ### What's new
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          files: |
+            release/AgyFlow Setup.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
