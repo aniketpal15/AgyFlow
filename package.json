@@ -11,7 +11,7 @@
     "electron:start": "node scripts/launch-detached.cjs",
     "start": "vite build && node scripts/launch-detached.cjs",
     "start:attached": "vite build && electron .",
-    "dist": "vite build && electron-builder --win"
+    "dist": "vite build && electron-builder --win --publish never"
   },
   "dependencies": {
     "framer-motion": "^12.43.0",
@@ -69,7 +69,6 @@
       "uninstallerIcon": "public/icon.ico",
       "installerHeaderIcon": "public/icon.ico",
       "artifactName": "AgyFlow Setup.${ext}"
-    },
-    "publish": "never"
+    }
   }
 }
