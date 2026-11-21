@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import loaderDark from '../assets/loader-dark.webp';
-import loaderLight from '../assets/loader-light.webp';
 
 // Fluid SVG metaball fallback (guaranteed zero broken images)
 function FluidOrbFallback({ isLight }) {
@@ -42,8 +41,6 @@ export default function SyncOverlay({ isSyncing, theme = 'dark' }) {
   const [imgError, setImgError] = useState(false);
   const isLight = theme === 'snow' || theme === 'latte';
 
-  const loaderSrc = isLight ? loaderLight : loaderDark;
-
   return (
     <AnimatePresence>
       {isSyncing && (
@@ -60,9 +57,7 @@ export default function SyncOverlay({ isSyncing, theme = 'dark' }) {
             style={{
               width: 360,
               height: 360,
-              background: isLight
-                ? 'radial-gradient(circle, rgba(124,58,237,0.22), transparent 70%)'
-                : 'radial-gradient(circle, rgba(0,240,255,0.20), transparent 70%)',
+              background: 'radial-gradient(circle, rgba(0,240,255,0.20), transparent 70%)',
             }}
           />
 
@@ -78,7 +73,7 @@ export default function SyncOverlay({ isSyncing, theme = 'dark' }) {
             <div className="relative flex items-center justify-center">
               {!imgError ? (
                 <img
-                  src={loaderSrc}
+                  src={loaderDark}
                   alt="Loading..."
                   onError={() => setImgError(true)}
                   className={`w-64 sm:w-72 md:w-80 h-auto object-contain select-none pointer-events-none drop-shadow-2xl ${

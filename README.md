@@ -13,6 +13,10 @@
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="MIT License" />
 </p>
 
+<p align="center">
+  <img src="screen1.png" alt="AgyFlow Dashboard Preview" width="800" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
+</p>
+
 ---
 
 ## 📖 Overview
@@ -95,44 +99,51 @@ When the timer hits zero, AgyFlow automatically resets the quota balance to **10
 ```
 AgyFlow/
 ├── data/
-│   ├── fleet.json              # Standby account roster & cached quotas
-│   ├── oauth.local.json        # Local authentication state
-│   └── userData.js             # Seed account profiles and initial fleet state
+│   └── userData.example.js     # Template user database (auto-initialized on first run)
 ├── electron/
-│   ├── cred_tool.cs            # C# Windows Credential Manager API wrapper
-│   ├── cred_tool.exe           # Compiled native Credential Manager executable
-│   ├── ide-injector.cjs        # Injects credentials & patches state.vscdb for IDE
-│   ├── main.cjs                # Electron lifecycle, window creation & IPC hub
-│   ├── oauth.cjs               # Language server RPC probing & quota extraction
-│   ├── preload.cjs             # Secure Electron contextBridge isolation
+│   ├── cred_tool.cs            # Native Windows Credential Manager C# interop
+│   ├── cred_tool.exe           # Compiled DPAPI keystore reader/writer binary
+│   ├── ide-injector.cjs        # Account switching & IDE state injection engine
+│   ├── main.cjs                # Electron window lifecycle & IPC coordinator
+│   ├── oauth.cjs               # Language Server RPC client & local telemetry
+│   ├── preload.cjs             # Context isolation bridge for renderer
 │   ├── read_cred.ps1           # PowerShell fallback keystore reader
-│   └── telemetry.cjs           # Fleet persistence & 7-day standby auto-restoration
+│   ├── telemetry.cjs           # Fleet persistence & 7-day quota restoration math
+│   ├── test_suite.cjs          # Automated E2E test verification suite
+│   └── vault-reader.cjs        # Antigravity SQLite vault & avatar resolver
 ├── public/
-│   └── favicon.svg             # Application vector icon
+│   ├── favicon.svg             # Application vector icon
+│   └── loader-dark.webp        # Global animated cyan infinity loader
 ├── scripts/
-│   └── launch-detached.cjs     # Detached process launcher (zero terminal locking)
+│   └── launch-detached.cjs     # Background daemon launcher script
 ├── src/
+│   ├── assets/
+│   │   └── loader-dark.webp    # Bundled animated glowing loader
 │   ├── components/
-│   │   ├── AccountCard.jsx     # Dual-quota progress bars, countdowns & actions
-│   │   ├── AccountGrid.jsx     # Hero active card + sorted standby accounts
-│   │   ├── AddAccountModal.jsx # Manual account import & Google login modal
-│   │   ├── Header.jsx          # Branding, theme toggle, refresh & master badge
-│   │   ├── RpcModal.jsx        # Raw RPC telemetry inspector & diagnostics
-│   │   ├── SplashLoader.jsx    # Smooth geometric entrance animation
-│   │   ├── SyncOverlay.jsx     # Frosted glass refresh overlay
-│   │   └── Toast.jsx           # Notification toast alerts
+│   │   ├── AccountCard.jsx     # Active hero & standby quota card presentations
+│   │   ├── AccountGrid.jsx     # Fleet grid layout & live quota rank sorting
+│   │   ├── AddAccountModal.jsx # Account linking & active session importer
+│   │   ├── ChromeAuthOverlay.jsx # Browser login instructions & flow assist
+│   │   ├── ErrorBoundary.jsx   # UI fault recovery & restart fallback
+│   │   ├── FleetBanner.jsx     # Dynamic fleet capacity summary & stats
+│   │   ├── Header.jsx          # App branding, theme switcher & refresh actions
+│   │   ├── RealGoogleAuthModal.jsx # Direct Google OAuth credential linker
+│   │   ├── RpcModal.jsx        # Raw Language Server telemetry inspector
+│   │   ├── SplashLoader.jsx    # Smooth launch screen with infinity animation
+│   │   ├── StatusBar.jsx       # Real-time daemon connection status bar
+│   │   ├── SyncOverlay.jsx     # Glassmorphic modal loading indicator
+│   │   └── Toast.jsx           # Real-time notification toasts
 │   ├── hooks/
-│   │   └── useAccounts.js      # Central state hook with 15s live countdown loop
-│   ├── lib/
-│   │   └── mockData.js         # Fallback data definitions
-│   ├── App.jsx                 # Main layout, modals, and theme coordinator
-│   ├── index.css               # Design tokens, themes & glassmorphism CSS
-│   └── main.jsx                # React DOM entry point
-├── index.html                  # HTML template & viewport definitions
-├── package.json                # Dependencies, scripts & build configuration
-├── run.bat                     # Windows 1-Click launcher batch file
-├── tailwind.config.js          # Tailwind theme extensions & glow shadows
-└── vite.config.js              # Vite bundler configuration
+│   │   └── useAccounts.js      # Central state hook with live countdown loop
+│   ├── App.jsx                 # Root UI coordinator, modal manager & theme provider
+│   ├── index.css               # Design system tokens, glassmorphism & typography
+│   └── main.jsx                # React root bootstrap
+├── index.html                  # HTML5 shell & fonts configuration
+├── package.json                # Project dependencies and lifecycle scripts
+├── postcss.config.cjs          # PostCSS processor configuration
+├── run.bat                     # Windows 1-Click launcher
+├── tailwind.config.js          # Tailwind CSS palette & styling tokens
+└── vite.config.js              # Vite build & bundler configuration
 ```
 
 ---

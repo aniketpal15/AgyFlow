@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import loaderDark from '../assets/loader-dark.webp';
-import loaderLight from '../assets/loader-light.webp';
 
 // Fluid SVG metaball loader fallback
 function FluidOrbSplash({ isLight }) {
@@ -61,8 +60,6 @@ export default function SplashLoader({ isVisible, theme = 'dark' }) {
     : 'from-transparent via-cyan to-transparent';
   const shimmerTrack = isLight ? 'bg-slate-200' : 'bg-white/[0.07]';
 
-  const loaderSrc = isLight ? loaderLight : loaderDark;
-
   return (
     <AnimatePresence>
       {isVisible && (
@@ -77,9 +74,7 @@ export default function SplashLoader({ isVisible, theme = 'dark' }) {
             style={{
               width: 380,
               height: 380,
-              background: isLight
-                ? 'radial-gradient(circle, rgba(124,58,237,0.20), transparent 70%)'
-                : 'radial-gradient(circle, rgba(0,240,255,0.18), transparent 70%)',
+              background: 'radial-gradient(circle, rgba(0,240,255,0.18), transparent 70%)',
             }}
           />
 
@@ -92,7 +87,7 @@ export default function SplashLoader({ isVisible, theme = 'dark' }) {
           >
             {!imgError ? (
               <img
-                src={loaderSrc}
+                src={loaderDark}
                 alt="Loading..."
                 onError={() => setImgError(true)}
                 className={`w-64 sm:w-72 md:w-80 h-auto object-contain select-none pointer-events-none drop-shadow-2xl ${

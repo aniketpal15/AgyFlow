@@ -108,6 +108,15 @@ function applyStandbyQuotaRestoration(fleet) {
 
 function loadFleet() {
   let fleet = [];
+
+  // 0. Auto-initialize userData.js from example template if missing on fresh clone
+  const userDataExampleFile = path.join(projectRoot, 'data', 'userData.example.js');
+  if (!fs.existsSync(userDataJsFile) && fs.existsSync(userDataExampleFile)) {
+    try {
+      fs.copyFileSync(userDataExampleFile, userDataJsFile);
+    } catch {}
+  }
+
   // 1. First priority: read project root userData.js database
   if (fs.existsSync(userDataJsFile)) {
     try {
