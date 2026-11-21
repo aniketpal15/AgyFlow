@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "electron:start": "node scripts/launch-detached.cjs",
     "start": "vite build && node scripts/launch-detached.cjs",
-    "start:attached": "vite build && electron ."
+    "start:attached": "vite build && electron .",
+    "dist": "vite build && electron-builder --win"
   },
   "dependencies": {
     "framer-motion": "^12.43.0",
@@ -24,8 +25,50 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "electron": "^34.3.0",
+    "electron-builder": "^26.18.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "vite": "^6.2.0"
+  },
+  "build": {
+    "appId": "com.agyflow.app",
+    "productName": "AgyFlow",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "data/userData.example.js",
+      "public/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/cred_tool.exe"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "AgyFlow",
+      "installerIcon": "public/icon.ico",
+      "uninstallerIcon": "public/icon.ico",
+      "installerHeaderIcon": "public/icon.ico",
+      "artifactName": "AgyFlow Setup.${ext}"
+    }
   }
 }

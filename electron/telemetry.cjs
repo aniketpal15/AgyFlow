@@ -117,8 +117,16 @@ function loadFleet() {
     } catch {}
   }
 
+  // If running in packaged app, check AppData store first
+  if (app && app.isPackaged) {
+    const raw = readJson(accountsFile(), []);
+    if (raw && raw.length > 0) {
+      fleet = normalizeFleet(raw);
+    }
+  }
+
   // 1. First priority: read project root userData.js database
-  if (fs.existsSync(userDataJsFile)) {
+  if (fleet.length === 0 && fs.existsSync(userDataJsFile)) {
     try {
       delete require.cache[require.resolve(userDataJsFile)];
       const loaded = require(userDataJsFile);

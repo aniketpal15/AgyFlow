@@ -91,6 +91,7 @@ function createWindow() {
     minHeight: 480,
     backgroundColor: '#090A0F',
     title: 'AgyFlow',
+    icon: path.join(__dirname, '../public/icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

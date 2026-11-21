@@ -8,6 +8,7 @@ dist/
 dist-electron/
 build/
 out/
+release/
 
 # Local sensitive user token databases (never commit real credentials)
 data/oauth.local.json
