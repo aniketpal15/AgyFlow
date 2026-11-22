@@ -4,7 +4,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAccounts: () => ipcRenderer.invoke('get-accounts'),
   importLocalAccount: () => ipcRenderer.invoke('import-local-account'),
   switchActiveAccount: (id) => ipcRenderer.invoke('switch-active-account', id),
-  debugSwitch: (id) => ipcRenderer.invoke('debug-switch', id),
   syncTokens: () => ipcRenderer.invoke('sync-tokens'),
   deleteAccount: (id) => ipcRenderer.invoke('delete-account', id),
   getOAuthConfig: () => ipcRenderer.invoke('get-oauth-config'),

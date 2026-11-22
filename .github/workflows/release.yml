@@ -48,6 +48,7 @@ jobs:
             ### What's new
             See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
           files: |
+            release/AgyFlow.Setup.exe
             release/AgyFlow Setup.exe
           draft: false
           prerelease: false

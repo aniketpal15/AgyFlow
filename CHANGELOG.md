@@ -4,6 +4,18 @@ All notable releases of AgyFlow are documented here.
 
 ---
 
+## [v1.1.1] - 2026-11-22
+
+### Fixed & Enhanced
+- **Seamless 1-Click Account Switcher**: Fixed IDE account switching by packing both `oauthTokenInfoSentinelKey` and `authStateWithContextSentinelKey` (`state: "signedIn"`) into the unified SQLite storage payload. Antigravity IDE now starts directly logged in to the target account without prompting "Continue with Google".
+- **Clean Process Termination Order**: Antigravity IDE and `agy.exe` background processes are cleanly terminated and file locks released before updating SQLite state, eliminating SQLite WAL write collisions.
+- **Legacy Auth Cleanup**: Automatically purges obsolete `google.antigravity` storage entries to prevent session conflicts.
+- **Production Cleanup**: Stripped all development-only test suites and debug IPC handlers for a clean production footprint.
+- **UI Version Display**: Updated UI header, splash loader, and telemetry displays to `v1.1`.
+- **Installer Asset Link**: Standardized installer asset naming to `AgyFlow.Setup.exe` to ensure direct one-click downloads from GitHub without 404 errors.
+
+---
+
 ## [v1.0.2] - 2026-11-21
 
 ### Fixed

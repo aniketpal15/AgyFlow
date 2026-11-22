@@ -69,6 +69,17 @@ class ProtoBuilder {
     return this.concatBytes(s1, s2, s3, s4, s5, s6);
   }
 
+  static buildDataEntryBytes(sentinelKey, value) {
+    let n = this.encodeStringField(1, value);
+    return this.concatBytes(this.encodeStringField(1, sentinelKey), this.encodeLenDelimField(2, n));
+  }
+
+  static createMultiEntryTopic(entries) {
+    let t = entries.map(o => this.encodeLenDelimField(1, this.buildDataEntryBytes(o.sentinelKey, o.value)));
+    let n = this.concatBytes(...t);
+    return Buffer.from(n).toString('base64');
+  }
+
   static createUnifiedStateEntry(sentinelKey, payloadBytes) {
     let b64 = Buffer.from(payloadBytes).toString('base64');
     let encB64 = this.encodeStringField(1, b64);
@@ -80,9 +91,28 @@ class ProtoBuilder {
     return Buffer.from(wrapped).toString('base64');
   }
 
-  static createUnifiedOAuthToken(accessToken, refreshToken, expirySec, isGsuite = false, idToken = '', email = '') {
+  static createUnifiedOAuthToken(accessToken, refreshToken, expirySec, isGsuite = false, idToken = '', email = '', projectId = '') {
     let info = this.createOAuthInfo(accessToken, refreshToken, expirySec, isGsuite, idToken, email);
-    return this.createUnifiedStateEntry('oauthTokenInfoSentinelKey', info);
+    let oauthInfoB64 = Buffer.from(info).toString('base64');
+    let authContextJson = JSON.stringify({
+      state: 'signedIn',
+      context: {
+        project: projectId || '',
+        showProjectError: false,
+        errorMessage: '',
+        ineligibleMessage: '',
+        verificationUrl: '',
+        isGcpTos: !!isGsuite,
+        browserOpenFailed: false,
+        appealUrl: '',
+        appealLinkText: ''
+      }
+    });
+
+    return this.createMultiEntryTopic([
+      { sentinelKey: 'oauthTokenInfoSentinelKey', value: oauthInfoB64 },
+      { sentinelKey: 'authStateWithContextSentinelKey', value: authContextJson }
+    ]);
   }
 
   static createMinimalUserStatusPayload(email) {
@@ -98,24 +128,38 @@ class ProtoBuilder {
   }
 }
 
+function formatCredentialExpiry(expirySeconds) {
+  const d = new Date((expirySeconds || Math.floor(Date.now() / 1000) + 3599) * 1000);
+  const pad = (n, len = 2) => String(n).padStart(len, '0');
+  const offset = -d.getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const absOffset = Math.abs(offset);
+  const ms = d.getMilliseconds();
+  const frac = `${pad(ms, 3)}0000`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${frac}${sign}${pad(Math.floor(absOffset / 60))}:${pad(absOffset % 60)}`;
+}
+
 /**
  * Safely writes Windows Credential Manager target gemini:antigravity
  */
 function writeWindowsCredential(email, accessToken, refreshToken, idToken) {
   const credToolPath = path.join(__dirname, 'cred_tool.exe');
+  const expirySec = Math.floor(Date.now() / 1000) + 3599;
   const credObj = {
     token: {
       access_token: accessToken,
       token_type: 'Bearer',
       refresh_token: refreshToken || '',
-      expiry: new Date(Date.now() + 3600000).toISOString(),
+      expiry: formatCredentialExpiry(expirySec),
       expires_in: 3599
     },
     auth_method: 'consumer',
-    id_token: idToken || '',
     id_token_email: email,
     writer_id: `agy-daemon-${Date.now()}`
   };
+  if (idToken) {
+    credObj.id_token = idToken;
+  }
   try {
     execFileSync(credToolPath, ['write', 'gemini:antigravity', JSON.stringify(credObj)]);
     console.log('[ide-injector] ✓ Windows Credential Manager updated for:', email);
@@ -127,25 +171,44 @@ function writeWindowsCredential(email, accessToken, refreshToken, idToken) {
 }
 
 /**
- * Executes an instant, safe account switch matching the BoyGR extension:
- * - Updates Windows Credential Manager (gemini:antigravity)
- * - Updates SQLite state.vscdb with protobuf oauthToken and userStatus
- * - Patches google.google-antigravity onboarding state
- * - NEVER force-kills Antigravity IDE or agy.exe (which would close the user app and terminal!)
- * - If Antigravity IDE is closed, starts it cleanly
- * - If Antigravity IDE is running, pings it via antigravity-ide.cmd -r
+ * Executes an instant, safe account switch:
+ * 1. Terminates running Antigravity IDE and agy.exe processes FIRST so file locks and SQLite WAL are released
+ * 2. Cleans up any leftover SQLite WAL / SHM lock files
+ * 3. Writes Windows Credential Manager target gemini:antigravity
+ * 4. Injects state.vscdb with full unified auth (oauthToken multi-topic with state="signedIn", userStatus, onboarding)
+ * 5. Removes conflicting legacy google.antigravity key
+ * 6. Launches Antigravity IDE cleanly with the new account
  */
 async function performFullIdeAccountSwitch(email, accessToken, refreshToken, idToken, avatarUrl = '') {
   const ideExe = 'C:\\Users\\anike\\AppData\\Local\\Programs\\Antigravity IDE\\Antigravity IDE.exe';
-  const ideCmd = 'C:\\Users\\anike\\AppData\\Local\\Programs\\Antigravity IDE\\bin\\antigravity-ide.cmd';
   const dbPath = path.join(process.env.APPDATA, 'Antigravity IDE', 'User', 'globalStorage', 'state.vscdb');
 
   console.log('[performFullIdeAccountSwitch] Switching account to:', email);
 
-  // 1. Write Windows Credential Manager (primary auth source)
+  // 1. Terminate running Antigravity IDE & agy tasks FIRST
+  try {
+    execSync('powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = \'SilentlyContinue\'; Stop-Process -Name \'Antigravity IDE\', \'agy\' -Force -ErrorAction SilentlyContinue"', {
+      windowsHide: true,
+      stdio: 'ignore',
+      timeout: 5000
+    });
+  } catch (termErr) {
+    console.warn('[performFullIdeAccountSwitch] Process termination notice:', termErr.message);
+  }
+
+  // Wait for process handles, file locks, and SQLite write locks to fully release
+  await new Promise(r => setTimeout(r, 1200));
+
+  // 2. Remove SQLite WAL / SHM files if left over
+  try {
+    if (fs.existsSync(dbPath + '-wal')) fs.unlinkSync(dbPath + '-wal');
+    if (fs.existsSync(dbPath + '-shm')) fs.unlinkSync(dbPath + '-shm');
+  } catch {}
+
+  // 3. Write Windows Credential Manager (primary auth source for agy.exe hub)
   writeWindowsCredential(email, accessToken, refreshToken, idToken);
 
-  // 2. Update state.vscdb safely
+  // 4. Update state.vscdb safely with Protobuf oauthToken, userStatus, and onboarding flags
   console.log('[performFullIdeAccountSwitch] Updating state.vscdb...');
   const wasmPath = path.join(require.resolve('sql.js'), '..', '..', 'dist', 'sql-wasm.wasm');
   const SQL = await initSqlJs({ locateFile: () => wasmPath });
@@ -175,6 +238,9 @@ async function performFullIdeAccountSwitch(email, accessToken, refreshToken, idT
   }
   insert.free();
 
+  // Clear legacy auth key that conflicts with new unified auth
+  db.run('DELETE FROM ItemTable WHERE key = ?', ['google.antigravity']);
+
   // Patch google.google-antigravity onboarding state
   try {
     const extStmt = db.prepare('SELECT value FROM ItemTable WHERE key = ?');
@@ -182,9 +248,11 @@ async function performFullIdeAccountSwitch(email, accessToken, refreshToken, idT
     if (extStmt.step()) {
       const raw = extStmt.getAsObject().value;
       const obj = JSON.parse(raw);
-      if (!obj['antigravity-storage']) obj['antigravity-storage'] = {};
-      obj['antigravity-storage']['agy.onboarding.lastLoginUsername'] = email;
-      obj['antigravity-storage']['agy.onboarding.lastLoginIsGcpTos'] = 'false';
+      let storage = obj['antigravity-storage'];
+      let inner = typeof storage === 'string' ? JSON.parse(storage) : (storage || {});
+      inner['agy.onboarding.lastLoginUsername'] = email;
+      inner['agy.onboarding.lastLoginIsGcpTos'] = 'false';
+      obj['antigravity-storage'] = typeof storage === 'string' ? JSON.stringify(inner) : inner;
 
       const updateStmt = db.prepare('INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)');
       updateStmt.run(['google.google-antigravity', JSON.stringify(obj)]);
@@ -210,32 +278,7 @@ async function performFullIdeAccountSwitch(email, accessToken, refreshToken, idT
     }
   }
 
-  // 3. Terminate running Antigravity IDE & agy tasks, then restart cleanly with new account
-  let wasIdeRunning = false;
-  try {
-    const check = execSync('powershell.exe -NoProfile -Command "$ProgressPreference = \'SilentlyContinue\'; Get-Process -Name \'Antigravity IDE\' -ErrorAction SilentlyContinue | Select-Object -First 1 Id"', {
-      encoding: 'utf8',
-      windowsHide: true
-    }).trim();
-    wasIdeRunning = !!check;
-  } catch {}
-
-  if (wasIdeRunning) {
-    console.log('[performFullIdeAccountSwitch] Ending Antigravity IDE & agy tasks completely...');
-    try {
-      execSync('powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = \'SilentlyContinue\'; Stop-Process -Name \'Antigravity IDE\', \'agy\' -Force -ErrorAction SilentlyContinue"', {
-        windowsHide: true,
-        stdio: 'ignore',
-        timeout: 5000
-      });
-    } catch (termErr) {
-      console.warn('[performFullIdeAccountSwitch] Process termination notice:', termErr.message);
-    }
-    // Wait for process handles and database locks to fully release
-    await new Promise(r => setTimeout(r, 1200));
-  }
-
-  // 4. Launch Antigravity IDE fresh with the new account
+  // 5. Launch Antigravity IDE fresh with the new account
   if (fs.existsSync(ideExe)) {
     console.log('[performFullIdeAccountSwitch] Launching fresh Antigravity IDE instance...');
     try {

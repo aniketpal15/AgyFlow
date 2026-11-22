@@ -71,7 +71,7 @@ https://github.com/aniketpal15/AgyFlow/releases/latest/download/AgyFlow.Setup.ex
 
 ### 🔄 Updating to a New Version
 
-When a new version is released (`v1.1.0`, `v1.2.0`, etc.):
+When a new version is released (`v1.1.1`, `v1.2.0`, etc.):
 1. Click the download button above (or go to the **[Releases Page](https://github.com/aniketpal15/AgyFlow/releases)**)
 2. Download and run the new `AgyFlow.Setup.exe`
 3. It **silently upgrades** your existing installation — no uninstall needed ✅

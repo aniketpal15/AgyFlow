@@ -24,7 +24,7 @@ export default function Header({
               AgyFlow
             </h1>
             <span className="version-badge px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-900/40 text-purple-300 border border-purple-500/30">
-              v1.0
+              v1.1
             </span>
           </div>
           <p className="text-[11px] text-slate-400 font-medium hidden sm:block">

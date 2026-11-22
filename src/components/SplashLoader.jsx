@@ -111,7 +111,7 @@ export default function SplashLoader({ isVisible, theme = 'dark' }) {
                 AgyFlow
               </h2>
               <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${badgeBg}`}>
-                v1.0
+                v1.1
               </span>
             </div>
 

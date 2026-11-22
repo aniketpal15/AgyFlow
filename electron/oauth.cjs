@@ -733,10 +733,6 @@ async function switchActiveAccount(accountId) {
     }
   }
 
-  if (!idToken) {
-    throw new Error(`Incomplete Google credentials (missing id_token) for ${target.email}.`);
-  }
-
   // 4. Perform the full, cleanly sequenced switch:
   // (injects creds & DB -> notifies IDE via CLI reload)
   await performFullIdeAccountSwitch(target.email, accessToken, refreshToken, idToken, target.avatarUrl || '');

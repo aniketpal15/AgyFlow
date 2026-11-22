@@ -179,39 +179,6 @@ ipcMain.handle('switch-active-account', async (_, id) => {
   }
 });
 
-// Debug: returns a step-by-step trace of what switch would do
-ipcMain.handle('debug-switch', async (_, id) => {
-  const log = [];
-  try {
-    const telemetry = require('./telemetry.cjs');
-    const { readIdeVaultToken, AGY_GLOBAL_STATE_DB } = require('./vault-reader.cjs');
-    const { safeStorage } = require('electron');
-    const fs = require('fs');
-
-    log.push(`DB path: ${AGY_GLOBAL_STATE_DB}`);
-    log.push(`DB exists: ${fs.existsSync(AGY_GLOBAL_STATE_DB)}`);
-    log.push(`safeStorage available: ${safeStorage?.isEncryptionAvailable?.()}`);
-
-    const accounts = telemetry.loadFleet();
-    const target = accounts.find(a => a.id === id);
-    log.push(`Target account: ${target ? target.email : 'NOT FOUND'}`);
-
-    if (target) {
-      const stored = telemetry.getTokens(id);
-      log.push(`secrets.bin rawSecret: ${stored?.rawSecret ? 'PRESENT (len=' + stored.rawSecret.length + ')' : 'MISSING'}`);
-      log.push(`userData._rawSecret: ${target._rawSecret ? 'PRESENT' : 'MISSING'}`);
-
-      log.push('Reading IDE vault...');
-      const vault = await readIdeVaultToken(target.email, safeStorage);
-      log.push(`Vault result: ${vault ? JSON.stringify({ hasAccessToken: !!vault.accessToken, hasRefresh: !!vault.refreshToken, tokenLen: vault.accessToken?.length }) : 'NULL'}`);
-    }
-    return { ok: true, log };
-  } catch (e) {
-    log.push(`EXCEPTION: ${e.message}`);
-    return { ok: false, log, error: e.message };
-  }
-});
-
 ipcMain.handle('sync-tokens', async () => {
   const result = await oauth.syncActiveIdeAccount();
   if (mainWindow && !mainWindow.isDestroyed()) {
