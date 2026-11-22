@@ -53,6 +53,51 @@ async function runTestSuite() {
   assert.ok(savedFleet.some(a => a.email.toLowerCase() === activeEmail.toLowerCase()), 'Fleet must persist active account to disk');
   console.log('  ✓ Test 3 Passed: Fleet verified on disk.\n');
 
+  // Test 4: Standby Quota Rolling Countdown Calculation & Auto-Restoration
+  console.log('[Test 4] Testing Standby Quota Rolling Countdown & Auto-Restoration...');
+  const pastDate = new Date(Date.now() - 3600000).toISOString();
+  const futureDate = new Date(Date.now() + 86400000 * 3).toISOString();
+  const testFleet = [
+    {
+      id: 'mock-expired',
+      email: 'standby.expired@gmail.com',
+      isActiveInIde: false,
+      quotas: [
+        { key: 'gemini', model: 'Gemini', remainingPercent: 0, resetTime: pastDate, resetCountdown: '1h' },
+        { key: 'claude-gpt', model: 'Claude & GPT', remainingPercent: 15, resetTime: pastDate, resetCountdown: '1h' }
+      ]
+    },
+    {
+      id: 'mock-active',
+      email: 'standby.cooling@gmail.com',
+      isActiveInIde: false,
+      quotas: [
+        { key: 'gemini', model: 'Gemini', remainingPercent: 40, resetTime: futureDate, resetCountdown: '6d 0h' }
+      ]
+    }
+  ];
+
+  const hasRestored = telemetry.applyStandbyQuotaRestoration(testFleet);
+  assert.strictEqual(hasRestored, true, 'Must detect and apply standby quota updates');
+
+  // Verify expired account automatically restored to 100%
+  const restored = testFleet[0];
+  assert.strictEqual(restored.quotas[0].remainingPercent, 100, 'Expired Gemini quota must be auto-restored to 100%');
+  assert.strictEqual(restored.quotas[0].resetCountdown, 'Ready', 'Expired Gemini countdown must become Ready');
+  assert.strictEqual(restored.quotas[0].resetTime, null, 'Expired Gemini resetTime must be cleared');
+  assert.strictEqual(restored.quotas[1].remainingPercent, 100, 'Expired Claude quota must be auto-restored to 100%');
+  assert.strictEqual(restored.quotas[1].resetCountdown, 'Ready', 'Expired Claude countdown must become Ready');
+  assert.strictEqual(restored.quotas[1].resetTime, null, 'Expired Claude resetTime must be cleared');
+
+  // Verify active standby account has countdown dynamically calculated against current date
+  const cooling = testFleet[1];
+  assert.strictEqual(cooling.quotas[0].remainingPercent, 40, 'Active quota percent remains intact');
+  assert.ok(cooling.quotas[0].resetCountdown.startsWith('3d'), 'Active standby countdown must reflect exact time remaining (3d)');
+
+  console.log('  -> Expired Standby Account: Auto-restored to 100% (Ready)');
+  console.log('  -> Active Standby Account: Countdown dynamically recalculated to', cooling.quotas[0].resetCountdown);
+  console.log('  ✓ Test 4 Passed: Standby quota math verified.\n');
+
   console.log('====================================================');
   console.log('   ALL TESTS PASSED: 100% VERIFIED & READY TO RUN!  ');
   console.log('====================================================');
