@@ -4,6 +4,15 @@ All notable releases of AgyFlow are documented here.
 
 ---
 
+## [v1.1.2] - 2026-11-24
+
+### Fixed
+- **Correct Quota Display (Gemini vs Claude & GPT)**: Fixed inverted quota values where Gemini showed 0% and Claude & GPT showed 35% (or vice versa) despite the actual live IDE data being correct. Root cause: `agy.exe` does not pass `--csrf_token=` as a CLI argument — CSRF is now fetched live from `http://127.0.0.1:<port>/` via `fetchCsrfFromPort()`.
+- **Async RPC Info Fetch**: Converted `getAgyRpcInfo()` to `async` and added `await` at all call sites — previously the missing `await` caused a Promise object to be passed as the info struct, silently failing all RPC calls and falling back to incorrect web API data.
+- **Hardened Quota Regex Matching**: `AccountCard.jsx` and `AccountGrid.jsx` now use robust regex patterns (`/gemini/i`, `/(claude|gpt|3p)/i`) instead of strict key-only matching, preventing future mismatch when the RPC response schema changes.
+
+---
+
 ## [v1.1.1] - 2026-11-22
 
 ### Fixed & Enhanced

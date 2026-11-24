@@ -1,7 +1,7 @@
 {
   "name": "agyflow",
   "productName": "AgyFlow",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "AgyFlow • Antigravity Multi-Account Token Fleet Daemon",
   "main": "electron/main.cjs",
   "scripts": {

@@ -16,8 +16,8 @@ export default function AccountGrid({
 
   // Helper: compute total quota pool sum (Gemini % + Claude %)
   const getQuotaSum = (acc) => {
-    const gemini = acc.quotas?.find(q => q.key === 'gemini' || q.model === 'Gemini')?.remainingPercent ?? 0;
-    const claude = acc.quotas?.find(q => q.key === 'claude-gpt' || /claude/i.test(q.model))?.remainingPercent ?? 0;
+    const gemini = acc.quotas?.find(q => q.key === 'gemini' || /gemini/i.test(q.model || ''))?.remainingPercent ?? 0;
+    const claude = acc.quotas?.find(q => q.key === 'claude-gpt' || /(claude|gpt|3p)/i.test(q.model || ''))?.remainingPercent ?? 0;
     return Number(gemini) + Number(claude);
   };
 

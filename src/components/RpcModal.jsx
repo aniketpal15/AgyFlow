@@ -34,7 +34,7 @@ export default function RpcModal({ isOpen, onClose, account }) {
       };
 
   const payload = {
-    daemon_version: "1.1.1-antigravity",
+    daemon_version: "1.1.2-antigravity",
     pool_id: account.id || "antigravity-local-node",
     seat_badge: account.seatBadge || "G1",
     authenticated_identity: account.email,

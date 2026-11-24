@@ -19,13 +19,13 @@ export default function AccountCard({ account, index, onDelete, onInspectRpc, on
   const emailInitial = (account.email?.[0] || 'G').toUpperCase();
 
   // Guaranteed two quotas: Gemini and Claude & GPT
-  const geminiQuota = account.quotas?.find(q => q.key === 'gemini' || q.model === 'Gemini') || {
+  const geminiQuota = account.quotas?.find(q => q.key === 'gemini' || /gemini/i.test(q.model || '')) || {
     model: 'Gemini',
     remainingPercent: 100,
     resetCountdown: 'Ready'
   };
 
-  const claudeGptQuota = account.quotas?.find(q => q.key === 'claude-gpt' || /claude/i.test(q.model)) || {
+  const claudeGptQuota = account.quotas?.find(q => q.key === 'claude-gpt' || /(claude|gpt|3p)/i.test(q.model || '')) || {
     model: 'Claude & GPT',
     remainingPercent: 100,
     resetCountdown: 'Ready'

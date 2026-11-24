@@ -257,7 +257,27 @@ function extractRemainingPercent(quotaInfo) {
 // ponytail: query the local running agy.exe language server directly for 100% accurate live quotas
 let _cachedAgyRpcInfo = null;
 
-function getAgyRpcInfo(forceRefresh = false) {
+function fetchCsrfFromPort(port) {
+  return new Promise((resolve) => {
+    const req = http.get({
+      hostname: '127.0.0.1',
+      port,
+      path: '/',
+      timeout: 2500
+    }, res => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        const match = data.match(/"csrfToken":"([a-zA-Z0-9-]+)"/);
+        resolve(match ? match[1] : null);
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
+}
+
+async function getAgyRpcInfo(forceRefresh = false) {
   if (!forceRefresh && _cachedAgyRpcInfo) {
     return _cachedAgyRpcInfo;
   }
@@ -272,9 +292,16 @@ function getAgyRpcInfo(forceRefresh = false) {
       });
       const portMatch = out.match(/--hub-port=(\d+)/i);
       const csrfMatch = out.match(/--csrf_token=([a-zA-Z0-9-]+)/i);
-      if (portMatch && csrfMatch) {
-        _cachedAgyRpcInfo = { port: parseInt(portMatch[1], 10), csrf: csrfMatch[1] };
-        return _cachedAgyRpcInfo;
+      if (portMatch) {
+        const port = parseInt(portMatch[1], 10);
+        let csrf = csrfMatch ? csrfMatch[1] : null;
+        if (!csrf) {
+          csrf = await fetchCsrfFromPort(port);
+        }
+        if (csrf) {
+          _cachedAgyRpcInfo = { port, csrf };
+          return _cachedAgyRpcInfo;
+        }
       }
     } catch (e) {
       console.warn(`[getAgyRpcInfo] query attempt ${attempt} warning:`, e.message);
@@ -321,7 +348,7 @@ function callAgyRpc(port, csrf, rpcPath) {
 function fetchAgyLocalQuotas(retries = 3) {
   return new Promise(async (resolve) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
-      const info = getAgyRpcInfo(attempt > 1);
+      const info = await getAgyRpcInfo(attempt > 1);
       if (!info) {
         if (attempt < retries) {
           await new Promise(r => setTimeout(r, 600));
